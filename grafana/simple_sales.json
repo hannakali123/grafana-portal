@@ -1,0 +1,22 @@
+{
+    "title": "Simple Sales",
+    "version": 1,
+    "schemaVersion": 38,
+    "tags": ["demo"],
+    "time": { "from": "now-90d", "to": "now" },
+    "panels": [
+        {
+            "type": "timeseries",
+            "title": "Umsatzverlauf",
+            "datasource": "laravel-db",
+            "targets": [
+                {
+                    "format": "time_series",
+                    "rawSql": "SELECT\n  $__timeGroupAlias(sale_date, '1d'),\n  SUM(amount) AS value\nFROM sales\nWHERE $__timeFilter(sale_date)\nGROUP BY 1\nORDER BY 1"
+                }
+            ],
+            "fieldConfig": { "defaults": { "unit": "currencyEUR" } },
+            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 }
+        }
+    ]
+}
