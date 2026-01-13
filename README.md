@@ -37,6 +37,8 @@ Ich hab das so gelöst, dass pro Benutzer eine eigene Grafana-Organisation + Ser
 - Blade
 - MySQL
 - Grafana
+- Vite (Frontend Build)
+
 
 ---
 
@@ -54,10 +56,12 @@ So bekommt Grafana die Auth-Daten und zeigt nur die Dashboards aus der passenden
 
 ## Voraussetzungen
 
-- PHP (8.x)
+- PHP **>= 8.2** (Laravel 12 braucht mindestens 8.2)
 - Composer
+- Node.js **>= 20** (für Vite / Frontend Assets)
 - MySQL
 - Grafana (lokal installiert und gestartet)
+
 
 ---
 
@@ -69,6 +73,9 @@ composer install
 cp .env.example .env
 php artisan key:generate
 ```
+
+
+
 
 
 ### 2) Datenbank einrichten
@@ -90,23 +97,50 @@ php artisan migrate
 ```bash
 php artisan db:seed
 ```
-### 3) Grafana starten
-
-Grafana läuft bei mir lokal unter:
-- http://localhost:3000
 
 
+### 3) Frontend Assets bauen (Vite)
+Ohne das fehlen die Dateien in public/build und Laravel zeigt z.B. beim Register/Login Vite manifest not found.
+```bash
+npm install
+npm run build
+```
 
-In `.env` die Grafana Daten setzen:
+### 4) Grafana konfigurieren + starten
 
+#### 4.1) Grafana so einstellen, dass es im iframe funktioniert
+In deiner `grafana.ini` setzen:
+
+```ini
+[server]
+root_url = http://127.0.0.1:8000/grafana/
+serve_from_sub_path = true
+
+[security]
+allow_embedding = true
+```
+
+
+Grafana neu starten:
+
+```bash
+brew services restart grafana
+```
+
+
+#### 4.2) Laravel `.env` Grafana Daten setzen
+
+In `.env` (GRAFANA_URL darf nur **einmal** vorkommen):
 
 ```env
-GRAFANA_URL=http://localhost:3000
+GRAFANA_URL=http://127.0.0.1:3000/grafana
 GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=admin
 
+
+
 ```
-### 4) Laravel starten
+### 5) Laravel starten
 
 ```bash
 php artisan serve
@@ -119,4 +153,13 @@ php artisan serve
 
 - **Signup/Provisioning schlägt fehl:**  
   Grafana muss laufen + Admin-Zugangsdaten in `.env` müssen stimmen.
+
+ 
+- **`Vite manifest not found` beim Login/Register:**  
+  `npm install` und danach `npm run build` ausführen.
+  
+
+- **Grafana lädt ewig / „failed to load application files“:**  
+  Prüfen ob `root_url` + `serve_from_sub_path = true` in der `grafana.ini` korrekt sind und Grafana neu starten.
+
 
