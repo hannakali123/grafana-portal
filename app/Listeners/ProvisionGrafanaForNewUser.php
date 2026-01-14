@@ -14,13 +14,12 @@ class ProvisionGrafanaForNewUser
     {
         $user = $event->user;
 
-        // idempotent: wenn schon provisioniert, nichts tun
         if ($user->grafana_token) {
             return;
         }
 
         try {
-            // KEINE DB::transaction hier – wegen CREATE DATABASE / TABLE
+
             $meta = $this->grafana->bootstrapFor($user);
 
             $user->update([
@@ -33,11 +32,9 @@ class ProvisionGrafanaForNewUser
                 'error'   => $e->getMessage(),
             ]);
 
-            // Optional: Konsistenz herstellen, wenn Registrierung ohne Grafana
-            // nicht erlaubt ist:
-            // $user->delete();
 
-            throw $e; // damit du den Fehler weiterhin im Browser/Log siehst
+
+            throw $e;
         }
     }
 }

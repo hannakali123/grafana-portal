@@ -10,12 +10,10 @@ use RuntimeException;
 
 class GrafanaApi
 {
-    /* --------------------------------------------------------------
-       Instanzweite Einstellungen (aus config/services.php / .env)
-       -------------------------------------------------------------- */
-    private string $baseUrl;       // z. B. http://localhost:3000/grafana/api
-    private string $adminUser;     // admin
-    private string $adminPassword; // ***
+
+    private string $baseUrl;
+    private string $adminUser;
+    private string $adminPassword;
 
     public function __construct()
     {
@@ -25,9 +23,7 @@ class GrafanaApi
         $this->adminPassword = $cfg['password'];
     }
 
-    /* --------------------------------------------------------------
-       Low-Level: HTTP-Request mit Basic-Auth (+ optional Org-Id)
-       -------------------------------------------------------------- */
+
     private function grafanaRequest(string $method, string $uri, array $payload = [], int $orgId = null)
     {
         $http = Http::withBasicAuth($this->adminUser, $this->adminPassword)->acceptJson();
@@ -39,9 +35,7 @@ class GrafanaApi
         return $http->{$method}($this->baseUrl . $uri, $payload);
     }
 
-    /* --------------------------------------------------------------
-       High-Level: Provisioning pro Laravel-User (einmalig)
-       -------------------------------------------------------------- */
+
     public function bootstrapFor(User $user): array
     {
         /* 1) Organisation (eine pro User) */
@@ -55,7 +49,7 @@ class GrafanaApi
             throw new RuntimeException('Organisation konnte nicht angelegt / gefunden werden');
         }
 
-        /* 2) Service-Account (SA) in dieser Org */
+
         $saName = Str::slug($user->name) . '-sa';
 
         $sa = $this->grafanaRequest(
@@ -74,7 +68,7 @@ class GrafanaApi
             )->json();
         }
 
-        /* 3) Exakt EIN frisches SA-Token */
+
         foreach ($this->grafanaRequest('get', "/serviceaccounts/{$sa['id']}/tokens", [], $orgId)->json() as $t) {
             $this->grafanaRequest('delete', "/serviceaccounts/{$sa['id']}/tokens/{$t['id']}", [], $orgId);
         }
@@ -90,17 +84,17 @@ class GrafanaApi
             throw new RuntimeException('Service-Account-Token konnte nicht erzeugt werden');
         }
 
-        /* 3.5) Persönliche MySQL-DB anlegen/befüllen (z. B. "hanna_db") */
+
         $dbName = $this->ensureUserDatabase($user, $orgId);
 
-        /* 4) Datasource + Dashboard (DS-Name pro User, z. B. "hanna-db") */
+
         $dsName = Str::slug($user->name, '-') . '-db';
         $this->ensureDatasourceAndDashboard($orgId, $dbName, $dsName);
 
-        /* 5) Rückgabe an Laravel */
+
         return [
-            'token'  => $tokenKey,  // wird in users.grafana_token gespeichert
-            'org_id' => $orgId,     // wird im iFrame als ?orgId=… genutzt
+            'token'  => $tokenKey,
+            'org_id' => $orgId,
         ];
     }
 
@@ -111,13 +105,13 @@ class GrafanaApi
      */
     private function ensureUserDatabase(User $user, int $orgId): string
     {
-        // DB-Name aus Usernamen: "hanna_db"
+
         $dbName = Str::slug($user->name, '_') . '_db';
 
-        // 1) DB anlegen (wenn nicht existiert)
+
         DB::statement("CREATE DATABASE IF NOT EXISTS `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 
-        // 2) Tabelle "sales" anlegen (wenn nicht existiert)
+
         DB::statement("
             CREATE TABLE IF NOT EXISTS `{$dbName}`.`sales` (
               `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -130,7 +124,7 @@ class GrafanaApi
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
-        // 3) Befüllen, falls leer
+
         $row = DB::selectOne("SELECT COUNT(*) AS c FROM `{$dbName}`.`sales`");
         $count = $row ? (int)($row->c ?? 0) : 0;
 
@@ -153,14 +147,10 @@ class GrafanaApi
         return $dbName;
     }
 
-    /**
-     * Stellt sicher, dass es in der Org eine Datasource $dsName gibt,
-     * die auf $dbName zeigt, und importiert/aktualisiert das Simple-Sales-Dashboard.
-     * Panels/Targets werden per DS-UID gebunden (robust gegen DS-Umbenennungen).
-     */
+
     private function ensureDatasourceAndDashboard(int $orgId, string $dbName, string $dsName): void
     {
-        // a) Datasource holen oder erstellen
+
         $dsResp = $this->grafanaRequest('get', "/datasources/name/{$dsName}", [], $orgId);
 
         if ($dsResp->successful()) {
@@ -200,20 +190,20 @@ class GrafanaApi
                 );
             }
 
-            // die frisch angelegte DS erneut holen (für uid)
+
             $ds = $this->grafanaRequest('get', "/datasources/name/{$dsName}", [], $orgId)->json();
         }
 
-        // b) Dashboard-JSON laden
+
         $jsonFile = base_path('grafana/simple_sales.json');
         if (!is_readable($jsonFile)) {
-            return; // Datei fehlt → Bonus überspringen
+            return;
         }
 
         $dashboard = json_decode(file_get_contents($jsonFile), true);
-        unset($dashboard['id']); // nie feste id importieren
+        unset($dashboard['id']);
 
-        // c) alle Panels/Targets an DS-UID binden (statt Name)
+
         $dsRef = ['type' => $ds['type'], 'uid' => $ds['uid']];
 
         if (isset($dashboard['panels']) && is_array($dashboard['panels'])) {
@@ -229,7 +219,7 @@ class GrafanaApi
             unset($panel);
         }
 
-        // d) Import/Update (overwrite=true, damit die Bindung sicher greift)
+
         $this->grafanaRequest('post', '/dashboards/db', [
             'dashboard' => $dashboard,
             'folderId'  => 0,

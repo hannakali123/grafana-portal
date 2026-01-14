@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 
 class GrafanaProxy extends Controller
 {
-    /** Hop-by-hop-Header, die NIEMALS weitergereicht werden dürfen */
+
     private const HOP_HEADERS = [
         'connection','keep-alive','proxy-authenticate','proxy-authorization',
         'te','trailer','transfer-encoding','upgrade',
