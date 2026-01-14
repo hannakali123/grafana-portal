@@ -1,5 +1,5 @@
 ## Preview
-![Portal](screenshots/DEINBILD.png)
+![Portal Screenshot](screenshots/Bildschirmfoto.png)
 
 
 # Laravel + Grafana Portal (Multi-User, 1 Grafana Instanz)
