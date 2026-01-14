@@ -1,3 +1,7 @@
+## Preview
+![Portal](screenshots/DEINBILD.png)
+
+
 # Laravel + Grafana Portal (Multi-User, 1 Grafana Instanz)
 
 Kleines Laravel-Portal mit Login/Signup, das nach dem Einloggen ein **Grafana** per **iframe** anzeigt.  
