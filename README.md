@@ -39,7 +39,6 @@ Ich hab das so gelöst, dass pro Benutzer eine eigene Grafana-Organisation + Ser
 - Grafana
 - Vite (Frontend Build)
 
-
 ---
 
 ## Wie die Auth funktioniert (kurz)
@@ -62,23 +61,24 @@ So bekommt Grafana die Auth-Daten und zeigt nur die Dashboards aus der passenden
 - MySQL
 - Grafana (lokal installiert und gestartet)
 
-
 ---
 
 ## Setup (lokal)
 
 ### 1) Projekt installieren
+
 ```bash
 composer install
 cp .env.example .env
 php artisan key:generate
 ```
 
-
-
-
-
 ### 2) Datenbank einrichten
+
+1) MySQL starten (falls nicht läuft) und eine DB anlegen (z.B. `laravel`).
+
+2) In `.env` die DB-Daten setzen:
+
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -88,11 +88,11 @@ DB_USERNAME=root
 DB_PASSWORD=secret
 
 ```
-Migrationen:
-
+Migrationen ausführen:
 ```bash
 php artisan migrate
 ```
+
 (Optional, falls Seeds vorhanden):
 ```bash
 php artisan db:seed
@@ -100,7 +100,7 @@ php artisan db:seed
 
 
 ### 3) Frontend Assets bauen (Vite)
-Ohne das fehlen die Dateien in public/build und Laravel zeigt z.B. beim Register/Login Vite manifest not found.
+Ohne das fehlen die Dateien in `public/build` und Laravel zeigt z.B. beim Register/Login `Vite manifest not found`.
 ```bash
 npm install
 npm run build
